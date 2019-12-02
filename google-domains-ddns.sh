@@ -36,6 +36,30 @@ elif [ "$PASSWORD" = "your password here" ]; then
   exit 1
 fi
 
+if [ -z "$HOSTNAME2" ]; then
+  echo "HOSTNAME2 must be defined in google-domains-ddns.conf"
+  exit 1
+elif [ "$HOSTNAME2" = "foo.ddns.net" ]; then
+  echo "Please enter your hostname2 in google-domain-ddns.conf"
+  exit 1
+fi
+
+if [ -z "$USERNAME2" ]; then
+  echo "USERNAME2 must be defined in google-domains-ddns.conf"
+  exit 1
+elif [ "$USERNAME2" = 'email@example.com' ]; then
+  echo "Please enter your username2 in google-domains-ddns.conf"
+  exit 1
+fi
+
+if [ -z "$PASSWORD2" ]; then
+  echo "PASSWORD2 must be defined in google-domains-ddns.conf"
+  exit 1
+elif [ "$PASSWORD2" = "your password here" ]; then
+  echo "Please enter your password2 in google-domains-ddns.conf"
+  exit 1
+fi
+
 if [ -z "$INTERVAL" ]; then
   INTERVAL='30m'
 fi
@@ -50,7 +74,7 @@ if [[ "${INTERVAL: -1}" == 'm' && "${INTERVAL:0:-1}" -lt 5 ]]; then
   exit 1
 fi
 
-USER_AGENT="dragoncube/docker-google-domains-ddns"
+USER_AGENT="nd/docker-google-domains-ddns"
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -58,11 +82,8 @@ function ts {
   echo [`date '+%b %d %X'`]
 }
 
-#-----------------------------------------------------------------------------------------------------------------------
-
-while true
-do
-  RESPONSE=$(curl -S -s -k --user-agent "$USER_AGENT" -u "$USERNAME:$PASSWORD" "https://domains.google.com/nic/update?hostname=$HOSTNAME" 2>&1)
+function callGoogleDDNS(){
+  RESPONSE=$(curl -S -s -k --user-agent "$USER_AGENT" -u "$2:$3" "https://domains.google.com/nic/update?hostname=$1" 2>&1)
 
   # Sometimes the API returns "nochg" without a space and ip address. It does this even if the password is incorrect.
   if [[ $RESPONSE =~ ^(good|nochg) ]]
@@ -82,5 +103,18 @@ do
     echo "$(ts) Couldn't update. Trying again in 5 minutes. Output from curl command was \"$RESPONSE\"."
   fi
 
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+while true
+do
+
+  callGoogleDDNS $HOSTNAME $USERNAME $PASSWORD
+  sleep 1800
+  callGoogleDDNS $HOSTNAME2 $USERNAME2 $PASSWORD2
+  
   sleep $INTERVAL
 done
+
+
